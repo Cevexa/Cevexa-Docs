@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
-  "name": "ClueControl",
+  "name": "Cevexa",
   "colors": {
-    "primary": "#FFA500",
-    "light": "#FFA500",
-    "dark": "#FFA500"
+    "primary": "#BAE6FD",
+    "light": "#BAE6FD",
+    "dark": "#BAE6FD"
   },
   "icons": {
     "library": "fontawesome"
@@ -25,8 +25,9 @@
     ]
   },
   "logo": {
-    "light": "/icons/Banner-ERLC-Russia-Docs-System.svg",
-    "dark": "/icons/Banner-ERLC-Russia-Docs-System.svg"
+    "light": "/icons/Cevexa.png",
+    "dark": "/icons/Cevexa.png",
+    "href": "https://cevexa.xyz"
   },
   "contextual": {
     "options": [
