@@ -65,7 +65,7 @@ Requests older than 5 minutes or with an invalid signature are rejected with `40
 | Event | Effect |
 |---|---|
 | `guild.joined` | Completes the user's pending connection for that guild, if one exists. Sets an existing `bot_missing` integration back to `active`. Without a pending connection or an existing integration, nothing is created. |
-| `guild.left` | Sets the guild's integration to `bot_missing`. The Server and its members are not changed. |
+| `guild.left` | Sets the guild's integration to `bot_missing` — unless the other Cevexa bot (Standard vs Plus) is still installed in the guild, in which case it stays `active`. The Server and its members are not changed. |
 
 Events are processed once per `id` (de-duplicated for 24 hours), so the bot can safely retry.
 
