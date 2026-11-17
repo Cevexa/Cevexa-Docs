@@ -31,6 +31,8 @@ Errors use one shape:
 | 409 | `integration_exists` | The external resource is already connected to a Cevexa object |
 | 409 | `provider_already_connected` | The Server already has an integration for this provider |
 | 409 | `connection_not_pending` | The pending connection is already completed, cancelled, expired or failed |
+| 409 | `already_member` / `duplicate` | Defensive conflict guards, reachable only through race conditions |
+| 500 | `internal` | An unexpected server error that maps to no specific code |
 | 503 | `service_unavailable` | A required data store is unavailable |
 
 Objects you are not a member of always return `404`, so their existence is not revealed.
@@ -139,8 +141,8 @@ Returns the updated Server with the same `id`. See [conversion rules](/en/platfo
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/v1/guilds` | Discord guilds from your last Discord login, with `botInstalled`, `canManage` (owner, Administrator or Manage Server) and `linked` (already connected to a Cevexa object) |
-| POST | `/v1/discord/connections` | Start with Discord: create a new Server from a guild. Body `{ "guildId": "…", "name": "optional, defaults to the guild name" }`. Always responds `{ "connection": …, "server": … }`; `server` is present only when the connection completed immediately (`201`), otherwise `202` without `server` |
+| GET | `/v1/guilds` | Discord guilds from your last Discord login, with `botInstalled`, `botStandardInstalled`, `botPlusInstalled`, `isOwner`, `canManage` (owner, Administrator or Manage Server) and `linked` (already connected to a Cevexa object) |
+| POST | `/v1/discord/connections` | Start with Discord: create a new Server from a guild. Body `{ "guildId": "…", "name": "optional, defaults to the guild name" }`. Always responds `{ "connection": …, "server": … }`; `server` is present only when the connection completed immediately (`201`), otherwise `202` without `server`. Any of your previous pending connections for the same guild are cancelled |
 | GET | `/v1/discord/connections/{connectionId}` | Poll a connection you started. Completes it when the bot is present. Always `200 { "connection": … }`; `status` becomes `expired` after 15 minutes |
 | DELETE | `/v1/discord/connections/{connectionId}` | Cancel a pending connection. `200 { "connection": … }` with `status: "cancelled"`; `409 connection_not_pending` otherwise |
 

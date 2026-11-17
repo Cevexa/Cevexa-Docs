@@ -31,6 +31,8 @@ description: "HTTP-контракт Cevexa API для серверов, депа
 | 409 | `integration_exists` | Внешний ресурс уже подключён к объекту Cevexa |
 | 409 | `provider_already_connected` | У сервера уже есть интеграция этого провайдера |
 | 409 | `connection_not_pending` | Подключение уже завершено, отменено, истекло или завершилось ошибкой |
+| 409 | `already_member` / `duplicate` | Защитные проверки конфликтов, достижимые только при гонках |
+| 500 | `internal` | Непредвиденная ошибка сервера без более конкретного кода |
 | 503 | `service_unavailable` | Необходимое хранилище данных недоступно |
 
 Для объектов, участником которых вы не являетесь, всегда возвращается `404`, чтобы не раскрывать их существование.
@@ -139,8 +141,8 @@ description: "HTTP-контракт Cevexa API для серверов, депа
 
 | Метод | Путь | Описание |
 |---|---|---|
-| GET | `/v1/guilds` | Гильдии Discord из вашего последнего входа через Discord с полями `botInstalled`, `canManage` (владелец, Administrator или Manage Server) и `linked` (уже подключена к объекту Cevexa) |
-| POST | `/v1/discord/connections` | «Начать с Discord»: создать новый сервер из гильдии. Тело `{ "guildId": "…", "name": "необязательно, по умолчанию название гильдии" }`. Ответ `{ "connection": …, "server": … }`; `server` есть только если подключение завершилось сразу (`201`), иначе `202` без `server` |
+| GET | `/v1/guilds` | Гильдии Discord из вашего последнего входа через Discord с полями `botInstalled`, `botStandardInstalled`, `botPlusInstalled`, `isOwner`, `canManage` (владелец, Administrator или Manage Server) и `linked` (уже подключена к объекту Cevexa) |
+| POST | `/v1/discord/connections` | «Начать с Discord»: создать новый сервер из гильдии. Тело `{ "guildId": "…", "name": "необязательно, по умолчанию название гильдии" }`. Ответ `{ "connection": …, "server": … }`; `server` есть только если подключение завершилось сразу (`201`), иначе `202` без `server`. Ваши предыдущие ожидающие подключения к той же гильдии отменяются |
 | GET | `/v1/discord/connections/{connectionId}` | Опрос подключения, которое вы начали. Завершает его, когда бот на месте. Всегда `200 { "connection": … }`; через 15 минут `status` становится `expired` |
 | DELETE | `/v1/discord/connections/{connectionId}` | Отменить ожидающее подключение. `200 { "connection": … }` со `status: "cancelled"`; иначе `409 connection_not_pending` |
 
