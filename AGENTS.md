@@ -22,3 +22,4 @@ This repository is the Mintlify source of **docs.cevexa.xyz** and the **canonica
 - Use the `git-autocommit` skill for every commit, but **always write commit messages in English**, regardless of the language of older commits in `git log`.
 - Format: Conventional Commits `<type>(<scope>): <summary>` in the imperative mood (`add`, `fix`, `update`, `remove`), followed by a full body that explains what changed and why (affected areas, migrations, breaking changes, verification run).
 - Push only feature branches unless told otherwise; never commit `.env*` or secrets.
+- GitHub (`github.com/Cevexa`) is the primary remote: `origin` fetches from GitHub and pushes to GitHub and the GitLab backup (`gitlab.com/Cevexa`) at once. Pull requests, Actions and GitHub Packages (`@cevexa/*`, registry `npm.pkg.github.com`) live on GitHub; GitLab is a backup mirror only.
