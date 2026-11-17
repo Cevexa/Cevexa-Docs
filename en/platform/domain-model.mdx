@@ -1,0 +1,95 @@
+---
+title: "Servers and Departments"
+description: "The canonical Cevexa domain model: Servers, Departments, parent relationships, ownership, membership, conversion and integrations."
+---
+
+This page is the single source of truth for the Cevexa platform domain model. Every repository (Website, API, Database, bots) and every agent skill refers to it instead of keeping its own copy of these rules.
+
+## Server
+
+A **Server** is the primary Cevexa object. Every Server has its own identity (ID, name, description, icon), owner, members, roles, settings, integrations, dashboard and lifecycle.
+
+A Server has a `type`:
+
+| Type | Meaning |
+|---|---|
+| `server` | A regular Server. It can have Departments. |
+| `department` | A Department. It is a complete, independent Server object, not a folder or a sub-module of another Server. |
+
+A Discord guild is **not** a Cevexa Server. A guild is an external resource that can be *connected* to a Server through an [integration](#integrations).
+
+## Department
+
+A Department is a Server whose `type` is `department`. It has everything a regular Server has — its own ID, owner, members, roles, settings, integrations (including its own Discord guild) and dashboard.
+
+A Department:
+
+- can exist on its own, without a parent;
+- can have **at most one** parent, and the parent must be a regular Server;
+- cannot have Departments of its own (no nesting);
+- can be attached to a parent, reassigned to another parent, or detached at any time, and stays fully usable when detached.
+
+## Parent relationship
+
+The relationship is stored on the Department as an optional `parent_server_id`.
+
+| Rule | Enforced by |
+|---|---|
+| Only a `department` can have a parent | Database CHECK + API |
+| The parent must be a regular `server` | Database trigger + API |
+| A Server cannot be its own parent | Database CHECK |
+| A Department cannot own Departments | Database trigger + API |
+| Deleting a parent never deletes its Departments | Foreign key `ON DELETE RESTRICT` + API |
+| Changing the parent does not move ownership or members | API (the parent link is the only field that changes) |
+| Being the parent does not grant administrative access to the Department | API authorization |
+
+Members of a parent Server can see the basic identity of its Departments (name, icon, type, integration status). They get no other access to a Department unless they are also its members.
+
+## Ownership and membership
+
+Every Server has exactly one **owner**, the Cevexa user who created it. Membership is stored per Server, and each member has one role:
+
+| Role | Can |
+|---|---|
+| `owner` | Everything, including deleting the Server and converting its type |
+| `administrator` | Edit the Server, manage integrations, create, attach and detach Departments |
+| `member` | View the Server, its members and its integrations |
+
+Ownership and membership belong to a single Server. They are never inherited from a parent Server or from a Discord guild. Installing the Cevexa bot in a Discord guild never makes anyone the owner of a Cevexa Server.
+
+## Conversion
+
+A Server can be converted into a Department and back. Conversion changes the `type` of the **existing** object; it never creates a replacement. The ID, owner, members, settings and integrations stay the same.
+
+- **Server → Department.** Only the owner can convert. The new Department can be left independent or attached to a regular Server in the same step. If the Server still has Departments, the conversion is refused (`server_has_departments`) until they are detached or moved to another Server.
+- **Department → Server.** Only the owner can convert. The parent link is removed and the type changes; integrations and data are kept.
+
+Each conversion runs in a single database transaction.
+
+## Integrations
+
+An **integration** connects a Server to an external platform resource. Currently supported:
+
+| Provider | External resource | Status |
+|---|---|---|
+| `discord` | A Discord guild | Available |
+| `erlc` | An ER:LC private server | Not available yet |
+
+Rules:
+
+- A Server can have at most one integration per provider.
+- An external resource (for example, a Discord guild) can be connected to only one Cevexa Server or Department at a time.
+- A Department's Discord integration is independent of its parent's Discord integration.
+
+Integration status:
+
+| Status | Meaning |
+|---|---|
+| `active` | The connection is verified and the Cevexa bot is present in the guild |
+| `bot_missing` | The guild is still connected, but the bot was removed from it. Reinstalling the bot makes it `active` again |
+
+Disconnecting an integration removes it. The Server itself is never deleted because a bot left a guild. See [Discord integration](/en/platform/discord-integration) for the full lifecycle.
+
+## Storage
+
+PostgreSQL (schema `platform`) is the system of record for Servers, members, integrations and pending connections. Redis only holds short-lived state (sessions cache, OAuth guild cache, bot installation sets, event de-duplication). MongoDB keeps bot guild configuration and logs. See [Servers API](/en/api/servers) for the HTTP contract.

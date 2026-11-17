@@ -1,0 +1,147 @@
+---
+title: "Servers API"
+description: "HTTP contract of the Cevexa API for Servers, Departments, members, conversion and integrations."
+---
+
+Base URL: `https://api.cevexa.xyz`. All endpoints require the Cevexa session cookie (`cevexa_auth`) created by Discord login and are called with `credentials: "include"`. Requests that change data must come from an allowed origin (`cevexa.xyz` and its subdomains, or a configured origin).
+
+## Errors
+
+Errors use one shape:
+
+```json
+{ "error": "Human-readable message", "code": "server_has_departments" }
+```
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `invalid_request` | Malformed JSON or unknown values |
+| 400 | `validation_failed` | A field is invalid; `field` names it |
+| 400 | `provider_not_supported` | Integration provider is not available |
+| 401 | `unauthorized` | No valid session |
+| 401 | `discord_reauth_required` | Your Discord guild list is older than 24 hours or missing; log in with Discord again |
+| 403 | `forbidden` | You are a member but your role does not allow the action |
+| 403 | `origin_not_allowed` | The request came from an origin that is not allowed |
+| 403 | `guild_not_manageable` | You cannot manage this Discord guild |
+| 404 | `not_found` | The object does not exist **or you are not a member of it** |
+| 409 | `server_has_departments` | The Server still has Departments |
+| 409 | `invalid_parent` | The parent is not a regular Server |
+| 409 | `not_a_department` / `not_a_server` | The action needs the other type |
+| 409 | `already_this_type` | Conversion to the current type |
+| 409 | `integration_exists` | The external resource is already connected to a Cevexa object |
+| 409 | `provider_already_connected` | The Server already has an integration for this provider |
+| 409 | `connection_not_pending` | The pending connection is already completed, cancelled, expired or failed |
+| 503 | `service_unavailable` | A required data store is unavailable |
+
+Objects you are not a member of always return `404`, so their existence is not revealed.
+
+## Objects
+
+### Server
+
+```json
+{
+  "id": "7c4f6a52-3a3e-4e5e-9a8e-0f1b2c3d4e5f",
+  "type": "department",
+  "name": "Fire Department",
+  "description": null,
+  "icon": null,
+  "parent": { "id": "1b9d…", "name": "City RP", "icon": null },
+  "role": "owner",
+  "owner": { "id": "123456789012345678", "name": "alex", "avatar": "https://cdn.discordapp.com/…" },
+  "memberCount": 1,
+  "departmentCount": 0,
+  "integrations": [
+    { "id": "…", "provider": "discord", "status": "active", "externalResourceId": "123…", "externalResourceName": "City RP Fire", "connectedAt": "2026-11-17T12:00:00Z" }
+  ],
+  "createdAt": "2026-11-17T12:00:00Z",
+  "updatedAt": "2026-11-17T12:00:00Z"
+}
+```
+
+`role` is the caller's role. `owner` and `memberCount` are included on single-object responses. User IDs are Discord user IDs.
+
+### Pending connection
+
+```json
+{
+  "id": "…",
+  "provider": "discord",
+  "intent": "create_server",
+  "status": "pending",
+  "guildId": "123456789012345678",
+  "guildName": "City RP",
+  "serverId": null,
+  "installUrl": "https://discord.com/oauth2/authorize?…",
+  "expiresAt": "2026-11-17T12:15:00Z",
+  "failureReason": null
+}
+```
+
+## Servers
+
+| Method | Path | Role | Description |
+|---|---|---|---|
+| GET | `/v1/servers` | — | Servers and Departments you are a member of. Optional `?type=server\|department` |
+| POST | `/v1/servers` | — | Create a Server or Department. You become its owner |
+| GET | `/v1/servers/{serverId}` | member | One Server |
+| PATCH | `/v1/servers/{serverId}` | administrator | Update `name`, `description`, `icon` (`null` clears) |
+| DELETE | `/v1/servers/{serverId}` | owner | Delete. Returns `409 server_has_departments` unless `?detachDepartments=true`, which detaches them first |
+
+`POST /v1/servers` body:
+
+```json
+{ "type": "department", "name": "Fire Department", "description": "Optional", "icon": "https://…", "parentServerId": "optional, regular Server you administer" }
+```
+
+`name` is 1–100 characters, `description` up to 1000, `icon` an `https` URL up to 2048 characters.
+
+## Departments
+
+| Method | Path | Role | Description |
+|---|---|---|---|
+| GET | `/v1/servers/{serverId}/departments` | member of the Server | Departments attached to a regular Server. Each item includes your `role` in that Department, or `null` |
+| POST | `/v1/servers/{serverId}/departments` | administrator of the Server | Create a Department attached to this Server. You become its owner |
+| PUT | `/v1/departments/{departmentId}/parent` | administrator of the Department **and** of the new parent | Attach or reassign. Body `{ "parentServerId": "…" }` |
+| DELETE | `/v1/departments/{departmentId}/parent` | administrator of the Department **or** of its current parent | Detach. The Department stays usable |
+
+## Conversion
+
+`POST /v1/servers/{serverId}/conversion` — owner only.
+
+```json
+{ "targetType": "department", "parentServerId": "optional" }
+```
+
+```json
+{ "targetType": "server" }
+```
+
+Returns the updated Server with the same `id`. See [conversion rules](/en/platform/domain-model#conversion).
+
+## Members
+
+`GET /v1/servers/{serverId}/members` — any member.
+
+```json
+[{ "userId": "123456789012345678", "name": "alex", "avatar": null, "role": "owner", "joinedAt": "2026-11-17T12:00:00Z" }]
+```
+
+## Integrations
+
+| Method | Path | Role | Description |
+|---|---|---|---|
+| GET | `/v1/servers/{serverId}/integrations` | member | Integrations of the Server |
+| POST | `/v1/servers/{serverId}/integrations` | administrator | Connect a Discord guild. Body `{ "provider": "discord", "externalResourceId": "<guild id>" }`. `201 { "integration": … }` if the bot is already in the guild, otherwise `202 { "connection": … }` |
+| DELETE | `/v1/servers/{serverId}/integrations/{integrationId}` | administrator | Disconnect. `204` |
+
+## Discord
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/guilds` | Discord guilds from your last Discord login, with `botInstalled`, `canManage` (owner, Administrator or Manage Server) and `linked` (already connected to a Cevexa object) |
+| POST | `/v1/discord/connections` | Start with Discord: create a new Server from a guild. Body `{ "guildId": "…", "name": "optional, defaults to the guild name" }`. Always responds `{ "connection": …, "server": … }`; `server` is present only when the connection completed immediately (`201`), otherwise `202` without `server` |
+| GET | `/v1/discord/connections/{connectionId}` | Poll a connection you started. Completes it when the bot is present. Always `200 { "connection": … }`; `status` becomes `expired` after 15 minutes |
+| DELETE | `/v1/discord/connections/{connectionId}` | Cancel a pending connection. `200 { "connection": … }` with `status: "cancelled"`; `409 connection_not_pending` otherwise |
+
+The guild list comes from your last Discord login. Starting a Discord connection requires a guild list that is at most 24 hours old; otherwise the API returns `401 discord_reauth_required` and you log in with Discord again.

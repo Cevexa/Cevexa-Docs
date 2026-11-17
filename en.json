@@ -4,8 +4,26 @@
     {
       "tab": "Documentation",
       "icon": "book",
-      "pages": [
-        "en/index"
+      "groups": [
+        {
+          "group": "Cevexa",
+          "pages": [
+            "en/index"
+          ]
+        },
+        {
+          "group": "Platform",
+          "pages": [
+            "en/platform/domain-model",
+            "en/platform/discord-integration"
+          ]
+        },
+        {
+          "group": "API",
+          "pages": [
+            "en/api/servers"
+          ]
+        }
       ]
     }
   ],
