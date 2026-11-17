@@ -143,6 +143,7 @@ description: "HTTP-контракт Cevexa API для серверов, депа
 |---|---|---|
 | GET | `/v1/guilds` | Гильдии Discord из вашего последнего входа через Discord с полями `botInstalled`, `botStandardInstalled`, `botPlusInstalled`, `isOwner`, `canManage` (владелец, Administrator или Manage Server) и `linked` (уже подключена к объекту Cevexa) |
 | POST | `/v1/discord/connections` | «Начать с Discord»: создать новый сервер из гильдии. Тело `{ "guildId": "…", "name": "необязательно, по умолчанию название гильдии" }`. Ответ `{ "connection": …, "server": … }`; `server` есть только если подключение завершилось сразу (`201`), иначе `202` без `server`. Ваши предыдущие ожидающие подключения к той же гильдии отменяются |
+| GET | `/v1/discord/connections` | Ваши незавершённые подключения (pending, failed, expired), сначала новые — позволяет продолжить установку, оставленную в ожидании. Всегда `200 { "connections": […] }` |
 | GET | `/v1/discord/connections/{connectionId}` | Опрос подключения, которое вы начали. Завершает его, когда бот на месте. Всегда `200 { "connection": … }`; через 15 минут `status` становится `expired` |
 | DELETE | `/v1/discord/connections/{connectionId}` | Отменить ожидающее подключение. `200 { "connection": … }` со `status: "cancelled"`; иначе `409 connection_not_pending` |
 
