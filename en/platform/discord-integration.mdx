@@ -1,87 +1,57 @@
 ---
-title: "Discord integration"
-description: "How a Discord guild is verified, connected to a Cevexa Server or Department, and kept in sync with the Cevexa bot."
+title: "Connect Discord"
+description: "Connect a Discord guild to a Cevexa Server or Department: invite the bot, what it asks for, and what you see."
 ---
 
-A Discord guild is connected to a Cevexa Server through a **pending connection**. The connection is completed only when both conditions are true:
+Connecting a Discord guild links it to a Cevexa Server or Department so the
+guild works with Cevexa. You can connect a guild while creating a Server
+(**Start with Discord**) or later from the object's **Integrations** page.
 
-1. The Cevexa user who started it can manage the guild. The API checks this with the guild list Discord returned during that user's Discord login (owner, `Administrator` or `Manage Server` permission). The guild list must be at most 24 hours old. Permissions sent by the browser are never trusted.
-2. The Cevexa bot is present in the guild.
+## Before you start
 
-## Lifecycle
+To connect a guild you must be able to *manage* it in Discord — that means
+you are the guild owner, or you have the **Administrator** or **Manage
+Server** permission there. Cevexa checks this against your Discord account,
+so sign in again if you recently got new permissions or your last sign-in
+was more than 24 hours ago.
 
-```mermaid
-sequenceDiagram
-  participant U as User (Website)
-  participant A as Cevexa API
-  participant D as Discord
-  participant B as Cevexa bot
-  U->>A: Start connection (guild)
-  A->>A: Verify the user can manage the guild
-  A-->>U: Pending connection + bot install URL
-  U->>D: Install the bot (popup)
-  D-->>B: Gateway GUILD_CREATE
-  B->>A: Signed event guild.joined
-  A->>A: Complete the pending connection (idempotent)
-  U->>A: Poll the connection
-  A-->>U: completed, serverId
-```
+## How connecting works
 
-1. **Start.** The Website calls `POST /v1/discord/connections` (create a new Server from a guild) or `POST /v1/servers/{serverId}/integrations` (connect a guild to an existing Server or Department). Either route cancels the caller's earlier pending connections for the same guild, and connection creation is rate-limited per user.
-2. **Install.** The response contains `installUrl`, which opens Discord's bot authorization for that guild. If the bot is already in the guild, the connection completes immediately.
-3. **Verify.** The bot reports `guild.joined` to the API. The Website also polls `GET /v1/discord/connections/{connectionId}`; polling completes the connection as soon as the bot's installation is visible, so a delayed event does not block the user.
-4. **Complete.** In one transaction the API creates the Server (for "Start with Discord"), adds the user as `owner`, and creates the `active` integration. Completing an already completed connection does nothing.
+1. **Pick a guild.** In **Start with Discord** or **Connect Discord**,
+   choose the guild from your list. Guilds you cannot manage are hidden;
+   guilds that are already connected are marked and can't be picked (a
+   Discord guild can only be linked to one Cevexa object at a time).
+2. **Add the Cevexa bot.** If the bot is not in the guild yet, you get an
+   install link — open it and add the bot. The invite asks for **no special
+   permissions**: Cevexa only needs to be present in the guild to connect it
+   and answer its commands.
+3. **Done automatically.** As soon as the bot is in, the connection finishes
+   on its own — the page completes by itself, you don't need to press
+   anything else. If the bot was already in the guild, the connection
+   finishes instantly.
 
-A pending connection expires after **15 minutes**. `DELETE /v1/discord/connections/{connectionId}` returns `204`: it cancels a `pending` connection and deletes a terminal (`failed`, `expired`, `cancelled`) one; an unknown id or another user's connection returns `404`. Expired or cancelled connections cannot be completed.
+A connection you leave unfinished expires after **15 minutes**. If that
+happens, or you closed the page, you can pick it up again from **Pending
+connections** on the dashboard's **Discord** page — or just start over.
 
-## Bot permissions
+## After connecting
 
-The bot is installed with the `bot` and `applications.commands` scopes and **no** guild permissions (`permissions=0`). The current bot only answers slash commands and component interactions, which do not need guild permissions. Future modules that need permissions will request them explicitly.
+- The guild shows **Connected** on the Discord page and on the object's
+  Integrations page.
+- Each Server or Department can have **one** Discord guild connected.
+- A Department's Discord connection is independent from its parent's —
+  they can use different guilds.
 
-## Bot events
+## If the bot gets removed
 
-The Discord Gateway is handled by `Cevexa-Bot`. The bot never writes to PostgreSQL; it sends events to the API:
-
-`POST /v1/internal/discord/events`
-
-| Header | Value |
-|---|---|
-| `X-Cevexa-Timestamp` | Unix time in seconds |
-| `X-Cevexa-Signature` | `sha256=` + hex HMAC-SHA256 of `{timestamp}.{raw body}` with `INTERNAL_EVENTS_SECRET` |
-
-Requests whose timestamp is more than 5 minutes from server time — past or future — or whose signature is invalid are rejected with `401`.
-
-```json
-{
-  "id": "guild.joined:123456789012345678:1731859200000",
-  "type": "guild.joined",
-  "guildId": "123456789012345678",
-  "guildName": "My guild",
-  "bot": "standard",
-  "occurredAt": "2026-11-17T12:00:00Z"
-}
-```
-
-The `bot` field is informational only: the API determines which Cevexa bot is installed in the guild from its own Redis sets (`bot:standard:guilds`, `bot:plus:guilds`), not from the event.
-
-| Event | Effect |
-|---|---|
-| `guild.joined` | Completes the oldest pending connection for that guild — whoever started it — if one exists. Sets an existing `bot_missing` integration back to `active`. Without a pending connection or an existing integration, nothing is created. |
-| `guild.left` | Sets the guild's integration to `bot_missing` — unless the other Cevexa bot (Standard vs Plus) is still installed in the guild, in which case it stays `active`. The Server and its members are not changed. |
-
-Events are processed once per `id` (de-duplicated for 24 hours), so the bot can safely retry.
-
-| Response | When |
-|---|---|
-| `200 { "ok": true }` | The event was processed |
-| `200 { "duplicate": true }` | An event with this `id` was already accepted |
-| `400 invalid_request` | Malformed JSON or an unknown event `type` |
-| `400 validation_failed` | A required field is missing (for example `guildId`) |
-| `401` | Invalid signature or a timestamp more than 5 minutes off |
-| `503 service_unavailable` | The endpoint is disabled (no signing secret configured) |
-
-The endpoint is also rate-limited per IP; a `429 rate_limited` response carries a `Retry-After` header.
+If someone kicks the Cevexa bot out of the guild, the connection is **not**
+lost — it shows as **Bot removed** on the Integrations page. Re-add the bot
+with **Add Cevexa again** and the connection becomes active again. Nothing
+else changes: your members and settings stay.
 
 ## Disconnecting
 
-`DELETE /v1/servers/{serverId}/integrations/{integrationId}` removes the integration. It does not remove the bot from the guild; a guild administrator removes the bot in Discord.
+**Disconnect** on the Integrations page removes the link between the guild
+and the Cevexa object. It does **not** remove the bot from your guild — if
+you want the bot gone too, remove it in the guild's own settings in Discord
+(a guild administrator can kick it like any other bot).
