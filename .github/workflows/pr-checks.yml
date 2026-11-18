@@ -1,0 +1,37 @@
+name: PR Checks
+
+on:
+  pull_request:
+    paths:
+      - '**/*.mdx'
+      - '**/*.json'
+      - '.github/workflows/pr-checks.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-checks:
+    name: JSON validity + mint broken-links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('docs.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('en.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('ru.json','utf8'))"
+
+      - name: Set up Node.js (mint CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check for broken links
+        run: npx -y mint broken-links
