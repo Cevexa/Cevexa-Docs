@@ -27,12 +27,12 @@ sequenceDiagram
   A-->>U: completed, serverId
 ```
 
-1. **Start.** The Website calls `POST /v1/discord/connections` (create a new Server from a guild) or `POST /v1/servers/{serverId}/integrations` (connect a guild to an existing Server or Department).
+1. **Start.** The Website calls `POST /v1/discord/connections` (create a new Server from a guild) or `POST /v1/servers/{serverId}/integrations` (connect a guild to an existing Server or Department). Either route cancels the caller's earlier pending connections for the same guild, and connection creation is rate-limited per user.
 2. **Install.** The response contains `installUrl`, which opens Discord's bot authorization for that guild. If the bot is already in the guild, the connection completes immediately.
 3. **Verify.** The bot reports `guild.joined` to the API. The Website also polls `GET /v1/discord/connections/{connectionId}`; polling completes the connection as soon as the bot's installation is visible, so a delayed event does not block the user.
 4. **Complete.** In one transaction the API creates the Server (for "Start with Discord"), adds the user as `owner`, and creates the `active` integration. Completing an already completed connection does nothing.
 
-A pending connection expires after **15 minutes**. The user can cancel it with `DELETE /v1/discord/connections/{connectionId}`. Expired or cancelled connections cannot be completed.
+A pending connection expires after **15 minutes**. `DELETE /v1/discord/connections/{connectionId}` returns `204`: it cancels a `pending` connection and deletes a terminal (`failed`, `expired`, `cancelled`) one; an unknown id or another user's connection returns `404`. Expired or cancelled connections cannot be completed.
 
 ## Bot permissions
 
@@ -49,7 +49,7 @@ The Discord Gateway is handled by `Cevexa-Bot`. The bot never writes to PostgreS
 | `X-Cevexa-Timestamp` | Unix time in seconds |
 | `X-Cevexa-Signature` | `sha256=` + hex HMAC-SHA256 of `{timestamp}.{raw body}` with `INTERNAL_EVENTS_SECRET` |
 
-Requests older than 5 minutes or with an invalid signature are rejected with `401`.
+Requests whose timestamp is more than 5 minutes from server time — past or future — or whose signature is invalid are rejected with `401`.
 
 ```json
 {
@@ -62,12 +62,25 @@ Requests older than 5 minutes or with an invalid signature are rejected with `40
 }
 ```
 
+The `bot` field is informational only: the API determines which Cevexa bot is installed in the guild from its own Redis sets (`bot:standard:guilds`, `bot:plus:guilds`), not from the event.
+
 | Event | Effect |
 |---|---|
-| `guild.joined` | Completes the user's pending connection for that guild, if one exists. Sets an existing `bot_missing` integration back to `active`. Without a pending connection or an existing integration, nothing is created. |
+| `guild.joined` | Completes the oldest pending connection for that guild — whoever started it — if one exists. Sets an existing `bot_missing` integration back to `active`. Without a pending connection or an existing integration, nothing is created. |
 | `guild.left` | Sets the guild's integration to `bot_missing` — unless the other Cevexa bot (Standard vs Plus) is still installed in the guild, in which case it stays `active`. The Server and its members are not changed. |
 
 Events are processed once per `id` (de-duplicated for 24 hours), so the bot can safely retry.
+
+| Response | When |
+|---|---|
+| `200 { "ok": true }` | The event was processed |
+| `200 { "duplicate": true }` | An event with this `id` was already accepted |
+| `400 invalid_request` | Malformed JSON or an unknown event `type` |
+| `400 validation_failed` | A required field is missing (for example `guildId`) |
+| `401` | Invalid signature or a timestamp more than 5 minutes off |
+| `503 service_unavailable` | The endpoint is disabled (no signing secret configured) |
+
+The endpoint is also rate-limited per IP; a `429 rate_limited` response carries a `Retry-After` header.
 
 ## Disconnecting
 
