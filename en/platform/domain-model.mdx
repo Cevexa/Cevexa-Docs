@@ -43,7 +43,7 @@ The relationship is stored on the Department as an optional `parent_server_id`.
 | Changing the parent does not move ownership or members | API (the parent link is the only field that changes) |
 | Being the parent does not grant administrative access to the Department | API authorization |
 
-Members of a parent Server can see the basic identity of its Departments (name, icon, type, integration status). They get no other access to a Department unless they are also its members.
+Members of a parent Server can list its Departments. Each item is the standard list representation of the Department — id, name, icon, type, `parent`, `memberCount`, `departmentCount`, `integrations` (including the Discord guild id and name) and timestamps, plus the caller's `role` in that Department or `null` — everything except `owner`, which is detail-only. They get no other access to a Department unless they are also its members.
 
 ## Ownership and membership
 
@@ -92,4 +92,4 @@ Disconnecting an integration removes it. The Server itself is never deleted beca
 
 ## Storage
 
-PostgreSQL (schema `platform`) is the system of record for Servers, members, integrations and pending connections. Redis only holds short-lived state (sessions cache, OAuth guild cache, bot installation sets, event de-duplication). MongoDB keeps bot guild configuration and logs. See [Servers API](/en/api/servers) for the HTTP contract.
+PostgreSQL is the system of record: Servers, members, integrations and pending connections live in schema `platform`, and sessions live in `users.user_sessions` — there is no sessions cache. Redis only holds short-lived state: the Discord guild-list cache from OAuth login (`cache:user_discord_guilds:{id}` + `cache:user_discord_guilds_fetched_at:{id}`), the bot guild sets (`bot:standard:guilds`, `bot:plus:guilds`), internal-event de-duplication keys (`discord:event:{id}`) and rate-limit counters (`rl:*`). MongoDB keeps bot guild configuration and logs. See [Servers API](/en/api/servers) for the HTTP contract.
