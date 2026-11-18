@@ -3,6 +3,8 @@ name: PR Checks
 on:
   pull_request:
     paths: ['**']
+  push:
+    branches: [main]
 
 permissions:
   contents: read
