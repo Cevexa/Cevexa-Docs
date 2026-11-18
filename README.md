@@ -1,8 +1,10 @@
 # Cevexa Documentation
 
-Official repository of source materials for the knowledge base and documentation of the **Cevexa** project.
+Official repository of the **public user documentation** of the **Cevexa** project.
 
-All files and articles from this repository are automatically published and accessible via a convenient web interface on our official website:
+Everything here is written for product users — how to sign in, create Servers and Departments, connect Discord, manage members and settings, and troubleshoot common issues. Internal engineering documentation lives in the private `Cevexa-Internal-Docs` repository and is referenced by name only.
+
+All files and articles from this repository are published and accessible via a convenient web interface on our official website:
 
 👉 **[docs.cevexa.xyz](https://docs.cevexa.xyz)**
 
