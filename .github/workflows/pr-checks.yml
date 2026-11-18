@@ -2,10 +2,7 @@ name: PR Checks
 
 on:
   pull_request:
-    paths:
-      - '**/*.mdx'
-      - '**/*.json'
-      - '.github/workflows/pr-checks.yml'
+    paths: ['**']
 
 permissions:
   contents: read
@@ -35,3 +32,17 @@ jobs:
 
       - name: Check for broken links
         run: npx -y mint broken-links
+
+  secret-scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+      - name: Scan history for secrets
+        run: gitleaks git --redact --exit-code 1 -v .
