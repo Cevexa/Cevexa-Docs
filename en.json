@@ -12,16 +12,20 @@
           ]
         },
         {
-          "group": "Platform",
+          "group": "Guides",
           "pages": [
+            "en/getting-started",
             "en/platform/domain-model",
-            "en/platform/discord-integration"
+            "en/platform/discord-integration",
+            "en/members-and-roles",
+            "en/server-settings"
           ]
         },
         {
-          "group": "API",
+          "group": "Help",
           "pages": [
-            "en/api/servers"
+            "en/faq",
+            "en/troubleshooting"
           ]
         }
       ]

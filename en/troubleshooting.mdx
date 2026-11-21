@@ -1,0 +1,80 @@
+---
+title: "Troubleshooting"
+description: "Fix common problems: missing guilds, stuck connections, sign-in loops and error messages."
+---
+
+## "Log in with Discord again" keeps appearing
+
+Your guild list is refreshed each time you sign in and stays valid for 24
+hours. When it expires — or right before connecting a guild — Cevexa asks
+you to sign in again. This is normal: press the button, re-authorize with
+Discord, and continue where you left off.
+
+## My guild doesn't appear in the picker
+
+Check, in order:
+
+1. You can manage the guild in Discord — owner, Administrator or Manage
+   Server. Guilds you cannot manage are hidden (the picker tells you how
+   many were hidden).
+2. You signed in **after** joining the guild or getting the permission —
+   sign in again to refresh the list.
+3. The guild isn't already connected to a Cevexa object — connected guilds
+   are marked and can't be picked. Disconnect it there first.
+
+## "This guild is already connected"
+
+A Discord guild can only be linked to one Cevexa Server or Department at a
+time. Objects with Discord connected are marked in your Servers list —
+open the object, choose **Discord** under **Platform**, then
+**Integrations**, disconnect it there, and connect it where you want it.
+
+## The bot install step is stuck on "Waiting for the bot to join…"
+
+- Make sure you completed the Discord authorization in the popup.
+- Check the bot actually landed in the guild (it should appear in the
+  member list).
+- Wait a few seconds — detection can take a moment.
+- If it still doesn't move, cancel and start again; or resume it from
+  **Pending connections** on the main dashboard page.
+
+## "The connection expired"
+
+An unfinished connection lasts 15 minutes. Start it again — or, if the bot
+is now installed, resume it from **Pending connections** on the main
+dashboard page and it will complete immediately.
+
+## "You can't manage this Discord guild"
+
+Cevexa only lets you connect guilds where you are the owner or have
+Administrator / Manage Server. If you believe you do, sign in again — your
+permissions may be newer than your last sign-in.
+
+## "This Server still has Departments"
+
+You can't convert or delete a Server while it has Departments attached.
+Open **Departments**, detach or move them first, then retry. (For deletes,
+you can also choose the option that detaches them automatically.)
+
+## "Not found or no access"
+
+You are not a member of that object — objects you can't access don't show
+up at all. Ask the owner or an administrator of that Server or Department
+for access.
+
+## "This action isn't allowed from here"
+
+The action was started from an unexpected place. Use the dashboard directly
+at [cevexa.xyz](https://cevexa.xyz) and try again — don't start actions from
+third-party pages or copied links.
+
+## "The service is temporarily unavailable"
+
+Something on Cevexa's side is having a moment. Wait a minute and retry; if
+it persists, check [status.cevexa.xyz](https://status.cevexa.xyz) or ask in
+the [support Discord](https://cevexa.xyz/discord).
+
+## "Couldn't load this page" / network errors
+
+Check your connection and retry. If only one page fails while others work,
+note what you clicked and report it in the support Discord.

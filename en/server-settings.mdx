@@ -1,0 +1,54 @@
+---
+title: "Server settings"
+description: "What you can change on a Cevexa Server or Department: general info, parent, type conversion and deletion."
+---
+
+The **Settings** page of a Server or Department holds everything you can
+change about it. What you see depends on your role — most actions need
+**administrator** or **owner**.
+
+## General
+
+Administrators and owners can edit:
+
+- **Name** — 1 to 100 characters, required.
+- **Description** — optional, up to 1000 characters.
+- **Icon URL** — optional, an `https` link to a square image shown across
+  Cevexa.
+
+Press **Save** to apply or **Discard** to undo your edits.
+
+## Parent Server (Departments only)
+
+A Department's settings show its **parent**:
+
+- **Change parent** / **Attach to a Server** — pick a Server you administer
+  to link the Department under it.
+- **Detach** — remove the parent link; the Department becomes independent
+  and keeps its members and integrations.
+
+Regular Servers don't have this section — only Departments can have a
+parent.
+
+## Type conversion
+
+Owners can convert the object between **Server** and **Department**:
+
+- **Convert to Department** — the Server becomes a Department; you can link
+  it to a parent now or later. If the Server still has Departments, the
+  button is blocked until they are detached or moved.
+- **Convert to Server** — the Department becomes a top-level Server and
+  loses its parent link.
+
+Conversion keeps everything: the object's identity, members and
+integrations stay exactly as they were.
+
+## Danger zone
+
+**Delete Server / Delete Department** permanently removes the object, its
+members and its integrations. To confirm you must type the object's name.
+
+Deleting a **Server that has Departments** does not delete them — they are
+detached first and become independent Departments.
+
+Only the **owner** can delete an object.
