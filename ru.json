@@ -4,8 +4,26 @@
     {
       "tab": "Документация",
       "icon": "book",
-      "pages": [
-        "ru/index"
+      "groups": [
+        {
+          "group": "Cevexa",
+          "pages": [
+            "ru/index"
+          ]
+        },
+        {
+          "group": "Платформа",
+          "pages": [
+            "ru/platform/domain-model",
+            "ru/platform/discord-integration"
+          ]
+        },
+        {
+          "group": "API",
+          "pages": [
+            "ru/api/servers"
+          ]
+        }
       ]
     }
   ],
